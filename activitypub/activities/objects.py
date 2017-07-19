@@ -57,6 +57,11 @@ class Object(object):
     def to_activitystream(self):
         return self
 
+class Note(Object):
+
+    attributes = Object.attributes + ["content", "actor"]
+    type = "Note"
+
 class Actor(Object):
 
     attributes = Object.attributes + [
@@ -87,6 +92,7 @@ ALLOWED_TYPES = {
     "Object": Object,
     "Actor": Actor,
     "Person": Person,
+    "Note": Note,
 }
 
 def as_activitystream(obj):

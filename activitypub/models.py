@@ -54,6 +54,29 @@ class Person(Model):
             })
         return json
 
+class Note(Model):
+    ap_id   = TextField(null=True)
+    remote  = BooleanField(default=False)
+
+    person  = ForeignKey(Person, related_name='notes')
+    content = CharField(max_length=500)
+    likes   = ManyToManyField(Person, related_name='liked')
+ 
+    @property
+    def uris(self):
+        if self.remote:
+            ap_id = self.ap_id
+        else:
+            ap_id = uri("note", self.person.username, self.id)
+        return URIs(id=ap_id)
+   
+    def to_activitystream(self):
+        return {
+            "id": self.uris.id,
+            "content": self.content,
+            "actor": self.person.uris.id,
+        }
+
 @receiver(post_save, sender=Person)
 @receiver(post_save, sender=Note)
 def save_ap_id(sender, instance, created, **kwargs):

@@ -15,6 +15,10 @@ def person(request, username):
     person = get_object_or_404(Person, username=username)
     return JsonResponse(activities.Person(person).to_json(context=True))
 
+def note(request, username, note_id):
+    note = get_object_or_404(Note, pk=note_id)
+    return JsonResponse(activities.Note(note).to_json(context=True))
+
 @csrf_exempt
 def outbox(request, username):
     if request.method != "POST":

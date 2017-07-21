@@ -84,6 +84,70 @@ class Person(Actor):
 
     type = "Person"
 
+class Collection(Object):
+
+    attributes = Object.attributes + ["items", "totalItems"]
+    type = "Collection"
+
+    def __init__(self, iterable=None, **kwargs):
+        self._items = []
+
+        Object.__init__(self, **kwargs)
+        if iterable is None:
+            return
+
+        self.items = iterable
+
+    @property
+    def items(self):
+        return self._items
+
+    @items.setter
+    def items(self, iterable):
+        for item in iterable:
+            if getattr(item, "to_activitystream", None):
+                self._items.append(item.to_activitystream())
+            else:
+                raise Exception("invalid ActivityStream object: {item}".format(item=item))
+
+
+    def to_json(self, **kwargs):
+        json = Object.to_json(self, **kwargs)
+        items = [item.to_json() if isinstance(item, Object) else item
+                 for item in self.items]
+        json.update({
+            "items": items
+        })
+        return json
+
+
+class OrderedCollection(Collection):
+
+    attributes = Object.attributes + ["orderedItems", "totalItems"]
+    type = "OrderedCollection"
+
+    @property
+    def totalItems(self):
+        return len(self.items)
+
+    @totalItems.setter
+    def totalItems(self, value):
+        pass
+
+    @property
+    def orderedItems(self):
+        return self.items
+
+    @orderedItems.setter
+    def orderedItems(self, iterable):
+        self.items = iterable
+
+    def to_json(self, **kwargs):
+        json  = Collection.to_json(self, **kwargs)
+        json["orderedItems"] = json["items"]
+        del json["items"]
+        return json
+
 #########
 # Utils #
 #########
@@ -93,6 +157,8 @@ ALLOWED_TYPES = {
     "Actor": Actor,
     "Person": Person,
     "Note": Note,
+    "Collection": Collection,
+    "OrderedCollection": OrderedCollection
 }
 
 def as_activitystream(obj):

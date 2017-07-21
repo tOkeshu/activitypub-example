@@ -6,6 +6,7 @@ from activitypub.views import followers, noop
 
 urlpatterns = [
     url(r'^@(\w+)/notes/(\w+)', note, name="note"),
+    url(r'^@(\w+)/notes', notes, name="notes"),
     url(r'^@(\w+)/outbox', outbox, name="outbox"),
     url(r'^@([^/]+)$', person, name="person"),
     url(r'^admin/', admin.site.urls),

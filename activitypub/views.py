@@ -56,3 +56,12 @@ def outbox(request, username):
 def deliver(activity):
     pass
 
+def notes(request, username):
+    person = get_object_or_404(Person, username=username)
+    collection = activities.OrderedCollection(person.notes.all())
+    # collection = activities.OrderedCollection(
+    #     person.notes.all(),
+    #     id=person.uris.notes
+    # )
+    return JsonResponse(collection.to_json(context=True))
+

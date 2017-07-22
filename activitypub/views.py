@@ -65,3 +65,10 @@ def notes(request, username):
     # )
     return JsonResponse(collection.to_json(context=True))
 
+def followers(request, username):
+    person = get_object_or_404(Person, username=username)
+    followers = activities.OrderedCollection(person.followers.all())
+    actor = activities.Person(id="http://bob.local/@bob",name="Bob")
+    followers.items.append(actor)
+    return JsonResponse(followers.to_json(context=True))
+

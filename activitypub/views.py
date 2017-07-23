@@ -54,7 +54,92 @@ def outbox(request, username):
     raise Exception("Invalid Request")
 
 def deliver(activity):
-    pass
+    audience = activity.get_audience()
+    activity = activity.strip_audience()
+    audience = get_final_audience(audience)
+    print("audience", audience)
+    for ap_id in audience:
+        deliver_to(ap_id, activity)
+
+def get_final_audience(audience):
+    final_audience = []
+    for ap_id in audience:
+        obj = dereference(ap_id)
+        if isinstance(obj, activities.Collection):
+            final_audience += [item.id for item in obj.items]
+        elif isinstance(obj, Actor):
+            final_audience.append(obj.id)
+    return set(final_audience)
+
+def deliver_to(ap_id, activity):
+    obj = dereference(ap_id)
+    if not getattr(obj, "inbox", None):
+        # XXX: log this
+        return
+
+    res = requests.post(obj.inbox, json=activity.to_json(context=True))
+    if res.status_code != 200:
+        msg = "Failed to deliver activity {0} to {1}"
+        msg = msg.format(activity.type, obj.inbox)
+        raise Exception(msg)
+
+def dereference(ap_id, type=None):
+    res = requests.get(ap_id)
+    if res.status_code != 200:
+        raise Exception("Failed to dereference {0}".format(ap_id))
+
+    return json.loads(res.text, object_hook=as_activitystream)
+
+@csrf_exempt
+def inbox(request, username):
+    person = get_object_or_404(Person, username=username)
+    if request.method != "POST":
+        return HttpResponseNotAllowed(["POST"])
+
+    payload  = request.body.decode("utf-8")
+    activity = json.loads(payload, object_hook=as_activitystream)
+    activity.validate()
+    print(activity)
+
+    if activity.type == "Create":
+        handle_note(activity)
+    return JsonResponse({"ok": "ok"})
+
+def handle_note(activity):
+    if isinstance(activity.actor, activities.Actor):
+        ap_id = activity.actor.id
+    elif isinstance(activity.actor, str):
+        ap_id = activity.actor
+
+    try:
+        person = Person.objects.get(ap_id=ap_id)
+    except Person.DoesNotExist:
+        person = dereference(ap_id)
+        hostname = urlparse(person.id).hostname
+        username = "{0}@{1}".format(person.preferredUsername, hostname)
+        person = Person(
+            username=username,
+            name=person.name,
+            ap_id=person.id,
+            remote=True,
+        )
+        person.save()
+
+    try:
+        note = Note.objects.get(ap_id=activity.object.id)
+    except Note.DoesNotExist:
+        note = None
+    if note:
+        return
+
+    note = Note(
+        content=activity.object.content,
+        person=person,
+        ap_id=activity.object.id,
+        remote=True
+    )
+    note.save()
+    print(activities.Note(note))
 
 def notes(request, username):
     person = get_object_or_404(Person, username=username)

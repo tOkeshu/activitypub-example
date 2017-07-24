@@ -20,7 +20,7 @@ class URIs(object):
 class Person(Model):
     ap_id     = TextField(null=True)
     remote    = BooleanField(default=False)
-    
+
     username  = CharField(max_length=100)
     name      = CharField(max_length=100)
     following = ManyToManyField('self', symmetrical=False, related_name='followers')
@@ -29,7 +29,7 @@ class Person(Model):
     def uris(self):
         if self.remote:
             return URIs(id=self.ap_id)
-        
+
         return URIs(
             id=uri("person", self.username),
             following=uri("following", self.username),
@@ -61,7 +61,7 @@ class Note(Model):
     person  = ForeignKey(Person, related_name='notes')
     content = CharField(max_length=500)
     likes   = ManyToManyField(Person, related_name='liked')
- 
+
     @property
     def uris(self):
         if self.remote:
@@ -69,7 +69,7 @@ class Note(Model):
         else:
             ap_id = uri("note", self.person.username, self.id)
         return URIs(id=ap_id)
-   
+
     def to_activitystream(self):
         return {
             "id": self.uris.id,
@@ -83,4 +83,3 @@ def save_ap_id(sender, instance, created, **kwargs):
     if created and not instance.remote:
         instance.ap_id = instance.uris.id
         instance.save()
-    

@@ -35,9 +35,9 @@ def outbox(request, username):
             actor=person.uris.id,
             object=obj
         )
-        
+
     activity.validate()
-    
+
     if activity.type == "Create":
         if activity.object.type != "Note":
             raise Exception("Sorry, you can only create Notes objects")
@@ -156,4 +156,3 @@ def followers(request, username):
     actor = activities.Person(id="http://bob.local/@bob",name="Bob")
     followers.items.append(actor)
     return JsonResponse(followers.to_json(context=True))
-

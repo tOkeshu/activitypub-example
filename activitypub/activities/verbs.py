@@ -15,7 +15,7 @@ class Activity(Object):
             value = getattr(self, attr, None)
             if not value:
                 continue
-            
+
             if isinstance(value, str):
                 value = [value]
             audience += value

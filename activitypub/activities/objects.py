@@ -15,11 +15,11 @@ class Object(object):
         for key in self.attributes:
             if key == "type":
                 continue
-            
+
             value = kwargs.get(key)
             if value is None:
                 continue
-            
+
             if isinstance(value, dict) and value.get("type"):
                 value = as_activitystream(value)
             self.__setattr__(key, value)
@@ -167,14 +167,13 @@ def as_activitystream(obj):
     if not type:
         msg = "Invalid ActivityStream object, the type is missing"
         raise errors.ASDecodeError(msg)
-    
+
     if type in ALLOWED_TYPES:
         return ALLOWED_TYPES[type](**obj)
-                       
+
     raise errors.ASDecodeError("Invalid Type {0}".format(type))
 
 def encode_activitystream(obj):
     if isinstance(obj, Object):
         return obj.to_json()
     raise errors.ASTypeError("Unknown ActivityStream Type")
-                      

@@ -19,13 +19,14 @@ Outbox:
 
 Delivery:
 
-- [ ] Handle `to` audience
-- [ ] Handle `cc` audience
-- [ ] Handle `bto` and `bcc`
+- [X] Handle `to` audience
+- [X] Handle `cc` audience
+- [X] Handle `bto` and `bcc`
+- [X] Handle `audience` audience
 
 Inbox:
 
-- [ ] Accept Create activities
+- [X] Accept Create activities
 - [ ] Accept Follow activities
 - [ ] Accept Like activities
 

@@ -2,7 +2,8 @@ from urllib.parse import urlparse
 import json
 import requests
 
-from django.http import JsonResponse, HttpResponseRedirect, HttpResponseNotAllowed
+from django.http import HttpResponse, HttpResponseRedirect, HttpResponseNotAllowed
+from django.http import JsonResponse
 from django.urls import reverse
 from django.shortcuts import get_object_or_404, render
 from django.views.decorators.csrf import csrf_exempt
@@ -54,6 +55,18 @@ def outbox(request, username):
         deliver(activity)
         return HttpResponseRedirect(note.uris.id)
 
+    if activity.type == "Follow":
+        # if activity.object.type != "Person":
+        #     raise Exception("Sorry, you can only follow Persons objects")
+
+        followed = get_or_create_remote_person(activity.object)
+        person.following.add(followed)
+
+        activity.actor = person.uris.id
+        activity.to = followed.uris.id
+        deliver(activity)
+        return HttpResponse() # TODO: code 202
+
     raise Exception("Invalid Request")
 
 def deliver(activity):
@@ -70,7 +83,7 @@ def get_final_audience(audience):
         obj = dereference(ap_id)
         if isinstance(obj, activities.Collection):
             final_audience += [item.id for item in obj.items]
-        elif isinstance(obj, Actor):
+        elif isinstance(obj, activities.Actor):
             final_audience.append(obj.id)
     return set(final_audience)
 
@@ -93,6 +106,22 @@ def dereference(ap_id, type=None):
 
     return json.loads(res.text, object_hook=as_activitystream)
 
+def get_or_create_remote_person(ap_id):
+    try:
+        person = Person.objects.get(ap_id=ap_id)
+    except Person.DoesNotExist:
+        person   = dereference(ap_id)
+        hostname = urlparse(person.id).hostname
+        username = "{0}@{1}".format(person.preferredUsername, hostname)
+        person = Person(
+            username=username,
+            name=person.name,
+            ap_id=person.id,
+            remote=True,
+        )
+        person.save()
+    return person
+
 @csrf_exempt
 def inbox(request, username):
     person = get_object_or_404(Person, username=username)
@@ -106,7 +135,9 @@ def inbox(request, username):
 
     if activity.type == "Create":
         handle_note(activity)
-    return JsonResponse({"ok": "ok"})
+    elif activity.type == "Follow":
+        handle_follow(activity)
+    return HttpResponse()
 
 def handle_note(activity):
     if isinstance(activity.actor, activities.Actor):
@@ -114,19 +145,7 @@ def handle_note(activity):
     elif isinstance(activity.actor, str):
         ap_id = activity.actor
 
-    try:
-        person = Person.objects.get(ap_id=ap_id)
-    except Person.DoesNotExist:
-        person = dereference(ap_id)
-        hostname = urlparse(person.id).hostname
-        username = "{0}@{1}".format(person.preferredUsername, hostname)
-        person = Person(
-            username=username,
-            name=person.name,
-            ap_id=person.id,
-            remote=True,
-        )
-        person.save()
+    person = get_or_create_remote_person(ap_id)
 
     try:
         note = Note.objects.get(ap_id=activity.object.id)
@@ -144,6 +163,17 @@ def handle_note(activity):
     note.save()
     print(activities.Note(note))
 
+def handle_follow(activity):
+    followed = get_object_or_404(Person, ap_id=activity.object)
+
+    if isinstance(activity.actor, activities.Actor):
+        ap_id = activity.actor.id
+    elif isinstance(activity.actor, str):
+        ap_id = activity.actor
+
+    follower = get_or_create_remote_person(ap_id)
+    followed.followers.add(follower)
+
 def notes(request, username):
     person = get_object_or_404(Person, username=username)
     collection = activities.OrderedCollection(person.notes.all())
@@ -156,6 +186,4 @@ def notes(request, username):
 def followers(request, username):
     person = get_object_or_404(Person, username=username)
     followers = activities.OrderedCollection(person.followers.all())
-    actor = activities.Person(id="http://bob.local/@bob",name="Bob")
-    followers.items.append(actor)
     return JsonResponse(followers.to_json(context=True))

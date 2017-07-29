@@ -40,6 +40,7 @@ class Person(Model):
 
     def to_activitystream(self):
         json = {
+            "type": "Person",
             "id": self.uris.id,
             "name": self.name,
             "preferredUsername": self.username,
@@ -72,6 +73,7 @@ class Note(Model):
 
     def to_activitystream(self):
         return {
+            "type": "Note",
             "id": self.uris.id,
             "content": self.content,
             "actor": self.person.uris.id,

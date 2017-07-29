@@ -105,8 +105,11 @@ class Collection(Object):
     @items.setter
     def items(self, iterable):
         for item in iterable:
-            if getattr(item, "to_activitystream", None):
-                self._items.append(item.to_activitystream())
+            if isinstance(item, Object):
+                self._items.append(item)
+            elif getattr(item, "to_activitystream", None):
+                item = as_activitystream(item.to_activitystream())
+                self._items.append(item)
             else:
                 raise Exception("invalid ActivityStream object: {item}".format(item=item))
 

@@ -50,8 +50,12 @@ class Create(Activity):
         if msg:
             raise errors.ASValidateException(msg)
 
+class Follow(Activity):
+
+    type = "Follow"
+
 ALLOWED_TYPES.update({
     "Activity": Activity,
     "Create": Create,
+    "Follow": Follow,
 })
-

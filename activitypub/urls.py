@@ -1,8 +1,7 @@
 from django.conf.urls import url
 from django.contrib import admin
 
-from activitypub.views import person, note, new_note, notes, inbox, outbox
-from activitypub.views import followers, noop
+from activitypub.views import person, note, notes, inbox, outbox, followers
 
 urlpatterns = [
     url(r'^@(\w+)/notes/(\w+)', note, name="note"),

@@ -187,3 +187,8 @@ def followers(request, username):
     person = get_object_or_404(Person, username=username)
     followers = activities.OrderedCollection(person.followers.all())
     return JsonResponse(followers.to_json(context=True))
+
+def following(request, username):
+    person = get_object_or_404(Person, username=username)
+    following = activities.OrderedCollection(person.following.all())
+    return JsonResponse(following.to_json(context=True))

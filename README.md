@@ -11,7 +11,7 @@ Features
 Outbox:
 
 - [X] Accept Create activities
-- [ ] Accept Follow activities
+- [X] Accept Follow activities
 - [ ] Accept Like activities
 - [X] Accept non-activity objects and convert them to a Create
   activity (only accepts Note objects for now since it is an example
@@ -27,7 +27,7 @@ Delivery:
 Inbox:
 
 - [X] Accept Create activities
-- [ ] Accept Follow activities
+- [X] Accept Follow activities
 - [ ] Accept Like activities
 
 Getting started

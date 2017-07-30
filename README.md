@@ -35,20 +35,20 @@ Getting started
 
 Install requirements (probably in a virtualenv):
 
-  $ pip install django requests
+    $ pip install django requests
 
 Clone this repository:
 
-  $ git clone https://github.com/tOkeshu/activitypub-example.git
+    $ git clone https://github.com/tOkeshu/activitypub-example.git
 
 Run the migrations
 
-  $ cd activitypub
-  $ ./manage.py migrate
+    $ cd activitypub
+    $ ./manage.py migrate
 
 Run the server
 
-  $ ./manage.py runserver
+    $ ./manage.py runserver
 
 Testing the federation
 ----------------------
@@ -58,10 +58,10 @@ You can use a reverse proxy to simulate remote servers.
 
 First add two new hosts in your hosts file:
 
-  $ cat /etc/hosts
-  ...
-  127.0.1.1	alice.local bob.local
-  ...
+    $ cat /etc/hosts
+    ...
+    127.0.1.1	alice.local bob.local
+    ...
 
 Then add two new virtual hosts for alice.local and bob.local.
 Here is an example nginx configuration file to achieve that:
@@ -106,8 +106,8 @@ Finally run the two servers in different terminals:
 
 Check that the servers are reachable via the correct hosts:
 
-  - [http://alice.local](http://alice.local)
-  - [http://bob.local](http://bob.local)
+ - [http://alice.local](http://alice.local)
+ - [http://bob.local](http://bob.local)
 
 If all works correctly they should be able to reach each others. To verify that, we need to first create users. The simplest way is to do it via the python shell:
 

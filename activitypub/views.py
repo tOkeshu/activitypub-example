@@ -8,7 +8,7 @@ from django.urls import reverse
 from django.shortcuts import get_object_or_404, render
 from django.views.decorators.csrf import csrf_exempt
 
-from activitypub.models import Person, Note
+from activitypub.models import Person, Note, Activity
 from activitypub import activities
 from activitypub.activities import as_activitystream
 
@@ -25,12 +25,15 @@ def note(request, username, note_id):
 
 @csrf_exempt
 def outbox(request, username):
-    if request.method != "POST":
-        return HttpResponseNotAllowed(["POST"])
+    person = get_object_or_404(Person, username=username)
+
+    if request.method == "GET":
+        objects = person.activities.filter(remote=False).order_by('-created_at')
+        collection = activities.OrderedCollection(objects)
+        return JsonResponse(collection.to_json(context=True))
 
     payload = request.body.decode("utf-8")
     activity = json.loads(payload, object_hook=as_activitystream)
-    person   = get_object_or_404(Person, username=username)
 
     if activity.type == "Note":
         obj = activity
@@ -52,7 +55,9 @@ def outbox(request, username):
 
         # TODO: check for actor being the right actor object
         activity.object.id = note.uris.id
+        activity.id = store(activity, person)
         deliver(activity)
+
         return HttpResponseRedirect(note.uris.id)
 
     if activity.type == "Follow":
@@ -64,16 +69,24 @@ def outbox(request, username):
 
         activity.actor = person.uris.id
         activity.to = followed.uris.id
+        activity.id = store(activity, person)
         deliver(activity)
         return HttpResponse() # TODO: code 202
 
     raise Exception("Invalid Request")
 
+def store(activity, person, remote=False):
+    payload  = bytes(json.dumps(activity.to_json()), "utf-8")
+    obj = Activity(payload=payload, person=person, remote=remote)
+    if remote:
+        obj.ap_id = activity.id
+    obj.save()
+    return obj.ap_id
+
 def deliver(activity):
     audience = activity.get_audience()
     activity = activity.strip_audience()
     audience = get_final_audience(audience)
-    print("audience", audience)
     for ap_id in audience:
         deliver_to(ap_id, activity)
 
@@ -125,18 +138,21 @@ def get_or_create_remote_person(ap_id):
 @csrf_exempt
 def inbox(request, username):
     person = get_object_or_404(Person, username=username)
-    if request.method != "POST":
-        return HttpResponseNotAllowed(["POST"])
+    if request.method == "GET":
+        objects = person.activities.filter(remote=True).order_by('-created_at')
+        collection = activities.OrderedCollection(objects)
+        return JsonResponse(collection.to_json(context=True))
 
     payload  = request.body.decode("utf-8")
     activity = json.loads(payload, object_hook=as_activitystream)
     activity.validate()
-    print(activity)
 
     if activity.type == "Create":
         handle_note(activity)
     elif activity.type == "Follow":
         handle_follow(activity)
+
+    store(activity, person, remote=True)
     return HttpResponse()
 
 def handle_note(activity):
@@ -192,3 +208,9 @@ def following(request, username):
     person = get_object_or_404(Person, username=username)
     following = activities.OrderedCollection(person.following.all())
     return JsonResponse(following.to_json(context=True))
+
+def activity(request, username, aid):
+    activity = get_object_or_404(Activity, pk=aid)
+    payload  = activity.payload.decode("utf-8")
+    activity = json.loads(payload, object_hook=as_activitystream)
+    return JsonResponse(activity.to_json(context=True))

@@ -1,5 +1,7 @@
+import json
+
 from django.db.models import Model, ForeignKey, CharField, TextField, BooleanField
-from django.db.models import ManyToManyField
+from django.db.models import BinaryField, DateField, ManyToManyField
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 
@@ -79,8 +81,33 @@ class Note(Model):
             "actor": self.person.uris.id,
         }
 
+class Activity(Model):
+
+    ap_id      = TextField()
+    payload    = BinaryField()
+    created_at = DateField(auto_now_add=True)
+    person     = ForeignKey(Person, related_name='activities')
+    remote     = BooleanField(default=False)
+
+    @property
+    def uris(self):
+        if self.remote:
+            ap_id = self.ap_id
+        else:
+            ap_id = uri("activity", self.person.username, self.id)
+        return URIs(id=ap_id)
+
+    def to_activitystream(self):
+        payload = self.payload.decode("utf-8")
+        data = json.loads(payload)
+        data.update({
+            "id": self.uris.id
+        })
+        return data
+
 @receiver(post_save, sender=Person)
 @receiver(post_save, sender=Note)
+@receiver(post_save, sender=Activity)
 def save_ap_id(sender, instance, created, **kwargs):
     if created and not instance.remote:
         instance.ap_id = instance.uris.id

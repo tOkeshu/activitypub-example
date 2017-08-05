@@ -3,7 +3,7 @@ ActivityPub example server
 
 This is an example server implementing a few basic features of [activitypub](https://www.w3.org/TR/activitypub/).
 
-Because ActivityPub is quite generic, the goal here is not the implement every aspect of ActivityPub but just a coherent subset that can be used for understanding the protocol as well as for testing. Thus the use case is microblogging: users can only publish or like notes and follow each others.
+Because ActivityPub is quite generic, the goal here is not to implement every aspect of ActivityPub but just a coherent subset that can be used for understanding the protocol as well as for testing. Thus the use case is microblogging: users can only publish or like notes and follow each others.
 
 Features
 --------
